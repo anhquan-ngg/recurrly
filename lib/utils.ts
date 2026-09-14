@@ -25,3 +25,22 @@ export const formatStatusLabel = (value?: string): string => {
   if (!value) return "Unknown";
   return value.charAt(0).toUpperCase() + value.slice(1);
 };
+
+type NamedUser =
+  | {
+      fullName?: string | null;
+      firstName?: string | null;
+      primaryEmailAddress?: { emailAddress?: string | null } | null;
+    }
+  | null
+  | undefined;
+
+export function getDisplayName(user: NamedUser): string {
+  return user?.fullName || user?.firstName || user?.primaryEmailAddress?.emailAddress || "there";
+}
+
+export const formatJoinedDate = (value?: Date | string | null): string => {
+  if (!value) return "—";
+  const parsedDate = dayjs(value);
+  return parsedDate.isValid() ? parsedDate.format("DD.MM.YYYY") : "—";
+};

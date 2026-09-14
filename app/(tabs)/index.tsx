@@ -1,11 +1,13 @@
 import ListHeading from "@/components/ListHeading";
 import SubscriptionCard from "@/components/SubscriptionCard";
 import UpcomingSubscriptionCard from "@/components/UpcomingSubscriptionCard";
-import { HOME_BALANCE, HOME_SUBSCRIPTIONS, HOME_USER, UPCOMING_SUBSCRIPTIONS } from "@/constants/data";
+import { HOME_BALANCE, HOME_SUBSCRIPTIONS, UPCOMING_SUBSCRIPTIONS } from "@/constants/data";
 import { icons } from "@/constants/icons";
 import images from "@/constants/images";
 import "@/global.css";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, getDisplayName } from "@/lib/utils";
+import { posthog } from "@/lib/posthog";
+import { useUser } from "@clerk/expo";
 import dayjs from "dayjs";
 import { styled } from "nativewind";
 import { useState } from "react";
@@ -15,7 +17,18 @@ import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 const SafeAreaView = styled(RNSafeAreaView);
 
 const Home = () => {
+  const { user } = useUser();
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<string | null>(null);
+  const displayName = getDisplayName(user);
+
+  const handleSubscriptionDetailsToggle = (subscriptionId: string, isExpanded: boolean) => {
+    posthog?.capture("subscription_details_toggled", {
+      subscription_id: subscriptionId,
+      is_expanded: !isExpanded,
+    });
+    setExpandedSubscriptionId(isExpanded ? null : subscriptionId);
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-background p-5">
       <FlatList
@@ -23,8 +36,8 @@ const Home = () => {
           <>
             <View className="home-header">
               <View className="home-user">
-                <Image source={images.avatar} className="w-16 h-16 rounded-full" />
-                <Text className="home-user-name">{HOME_USER.name}</Text>
+                <Image source={user?.imageUrl ? { uri: user.imageUrl } : images.avatar} className="w-16 h-16 rounded-full" />
+                <Text className="home-user-name">{displayName}</Text>
               </View>
               <Image source={icons.add} className="home-add-icon" />
             </View>
@@ -60,7 +73,7 @@ const Home = () => {
           <SubscriptionCard
             {...item}
             expanded={expandedSubscriptionId === item.id}
-            onPress={() => setExpandedSubscriptionId((currentId) => (currentId === item.id ? null : item.id))}
+            onPress={() => handleSubscriptionDetailsToggle(item.id, expandedSubscriptionId === item.id)}
           />
         )}
         extraData={expandedSubscriptionId}
